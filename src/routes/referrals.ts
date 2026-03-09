@@ -50,7 +50,14 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
       maxUses: referral.maxUses,
       usedCount: referral.usedCount,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2023") {
+      return res.status(404).json({ error: "Launch not found" });
+    }
+    // Handle unique constraint violation at DB level too
+    if (error?.code === "P2002") {
+      return res.status(409).json({ error: "Duplicate referral code for this launch" });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -82,7 +89,10 @@ router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
         usedCount: r.usedCount,
       }))
     );
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2023") {
+      return res.status(404).json({ error: "Launch not found" });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 });

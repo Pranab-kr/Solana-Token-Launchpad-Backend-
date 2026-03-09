@@ -17,7 +17,7 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
 
     const numAmount = Number(amount);
 
-    // Find launch with purchases
+    // Find launch with purchases and whitelist
     const launch = await prisma.launch.findUnique({
       where: { id: launchId },
       include: { purchases: true, whitelistEntries: true },
@@ -61,9 +61,9 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "Duplicate txSignature" });
     }
 
-    // Calculate totalCost with tiered pricing
+    // Calculate totalCost with tiered pricing, accounting for previous purchases
     const tiers = launch.tiers as Tier[] | null;
-    let totalCost = computeTotalCost(numAmount, launch.pricePerToken, tiers);
+    let totalCost = computeTotalCost(numAmount, launch.pricePerToken, tiers, totalPurchased);
 
     // Apply referral discount if provided
     if (referralCode) {
@@ -102,7 +102,11 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
     });
 
     return res.status(201).json(purchase);
-  } catch (error) {
+  } catch (error: any) {
+    // Handle Prisma invalid ID errors
+    if (error?.code === "P2023" || error?.code === "P2025") {
+      return res.status(404).json({ error: "Launch not found" });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -129,7 +133,10 @@ router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
     }
 
     return res.status(200).json({ purchases, total: purchases.length });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2023") {
+      return res.status(404).json({ error: "Launch not found" });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import authRoutes from "./routes/auth";
 import launchRoutes from "./routes/launches";
@@ -17,21 +18,16 @@ app.get("/api/health", (_req, res) => {
 // Auth routes
 app.use("/api/auth", authRoutes);
 
-// Launch routes
-app.use("/api/launches", launchRoutes);
-
-// Whitelist routes (nested under launches)
+// IMPORTANT: Mount sub-routes BEFORE the launches router
+// so that /api/launches/:id/whitelist doesn't get caught by launches /:id
 app.use("/api/launches/:id/whitelist", whitelistRoutes);
-
-// Referral routes (nested under launches)
 app.use("/api/launches/:id/referrals", referralRoutes);
-
-// Purchase routes (nested under launches)
 app.use("/api/launches/:id/purchase", purchaseRoutes);
 app.use("/api/launches/:id/purchases", purchaseRoutes);
-
-// Vesting routes (nested under launches)
 app.use("/api/launches/:id/vesting", vestingRoutes);
+
+// Launch routes (must be AFTER sub-routes to avoid /:id catching sub-paths)
+app.use("/api/launches", launchRoutes);
 
 app.listen(3000, () => {
   console.log("Server running on port 3000");

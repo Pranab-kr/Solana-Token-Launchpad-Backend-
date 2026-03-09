@@ -44,7 +44,9 @@ router.get("/", async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { cliffDays, vestingDays, tgePercent } = vestingConfig;
+    const cliffDays = vestingConfig.cliffDays || 0;
+    const vestingDays = vestingConfig.vestingDays;
+    const tgePercent = vestingConfig.tgePercent || 0;
     const now = new Date();
     const launchEnd = new Date(launch.endsAt);
 
@@ -89,7 +91,10 @@ router.get("/", async (req: AuthRequest, res: Response) => {
       lockedAmount,
       claimableAmount,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2023") {
+      return res.status(404).json({ error: "Launch not found" });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 });

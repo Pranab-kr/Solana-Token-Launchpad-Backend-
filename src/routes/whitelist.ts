@@ -39,7 +39,10 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
     const total = await prisma.whitelistEntry.count({ where: { launchId } });
 
     return res.status(200).json({ added: addedCount, total });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2023") {
+      return res.status(404).json({ error: "Launch not found" });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -65,7 +68,10 @@ router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
     const addresses = entries.map((e) => e.address);
 
     return res.status(200).json({ addresses, total: addresses.length });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2023") {
+      return res.status(404).json({ error: "Launch not found" });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -99,7 +105,10 @@ router.delete("/:address", authRequired, async (req: AuthRequest, res: Response)
     });
 
     return res.status(200).json({ removed: true });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2023") {
+      return res.status(404).json({ error: "Launch not found" });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 });

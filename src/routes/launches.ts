@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import prisma from "../lib/prisma";
 import { AuthRequest, authRequired } from "../middleware/auth";
-import { computeStatus, addStatusToLaunch } from "../lib/helpers";
+import { addStatusToLaunch } from "../lib/helpers";
 
 const router = Router();
 
@@ -10,7 +10,13 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const { name, symbol, totalSupply, pricePerToken, startsAt, endsAt, maxPerWallet, description, tiers, vesting } = req.body;
 
-    if (!name || !symbol || totalSupply === undefined || totalSupply === null || pricePerToken === undefined || pricePerToken === null || !startsAt || !endsAt || maxPerWallet === undefined || maxPerWallet === null) {
+    if (
+      !name || !symbol ||
+      totalSupply === undefined || totalSupply === null ||
+      pricePerToken === undefined || pricePerToken === null ||
+      !startsAt || !endsAt ||
+      maxPerWallet === undefined || maxPerWallet === null
+    ) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -25,8 +31,8 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
         maxPerWallet: Number(maxPerWallet),
         description: description || "",
         creatorId: req.userId!,
-        tiers: tiers || undefined,
-        vesting: vesting || undefined,
+        tiers: tiers !== undefined ? tiers : undefined,
+        vesting: vesting !== undefined ? vesting : undefined,
       },
       include: { purchases: true },
     });
@@ -45,20 +51,16 @@ router.get("/", async (req: AuthRequest, res: Response) => {
     const statusFilter = req.query.status as string | undefined;
     const skip = (page - 1) * limit;
 
-    // Get all launches with purchases to compute status
     const allLaunches = await prisma.launch.findMany({
       include: { purchases: true },
       orderBy: { createdAt: "desc" },
     });
 
-    // Compute status for each launch
-    let launchesWithStatus = allLaunches.map((l) => ({
-      ...addStatusToLaunch(l),
-    }));
+    let launchesWithStatus = allLaunches.map((l) => addStatusToLaunch(l));
 
     // Filter by status if specified
     if (statusFilter) {
-      launchesWithStatus = launchesWithStatus.filter((l) => l.status === statusFilter);
+      launchesWithStatus = launchesWithStatus.filter((l: any) => l.status === statusFilter);
     }
 
     const total = launchesWithStatus.length;
@@ -88,7 +90,11 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
     }
 
     return res.status(200).json(addStatusToLaunch(launch));
-  } catch (error) {
+  } catch (error: any) {
+    // Prisma throws on malformed UUIDs
+    if (error?.code === "P2023") {
+      return res.status(404).json({ error: "Launch not found" });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -129,7 +135,10 @@ router.put("/:id", authRequired, async (req: AuthRequest, res: Response) => {
     });
 
     return res.status(200).json(addStatusToLaunch(updated));
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2023" || error?.code === "P2025") {
+      return res.status(404).json({ error: "Launch not found" });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 });
