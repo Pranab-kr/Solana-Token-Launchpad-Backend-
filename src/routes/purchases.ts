@@ -3,9 +3,9 @@ import prisma from "../lib/prisma";
 import { AuthRequest, authRequired } from "../middleware/auth";
 import { computeStatus, computeTotalCost, Tier } from "../lib/helpers";
 
-const router = Router({ mergeParams: true });
+export const purchaseRouter = Router({ mergeParams: true });
 
-router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
+purchaseRouter.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;
     const { walletAddress, amount, txSignature, referralCode } = req.body;
@@ -15,6 +15,10 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
     }
 
     const numAmount = Number(amount);
+
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
 
     const launch = await prisma.launch.findUnique({
       where: { id: launchId },
@@ -99,7 +103,9 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
+export const purchasesRouter = Router({ mergeParams: true });
+
+purchasesRouter.get("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;
 
@@ -125,5 +131,3 @@ router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-
-export default router;

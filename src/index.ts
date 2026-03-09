@@ -4,7 +4,7 @@ import authRoutes from "./routes/auth";
 import launchRoutes from "./routes/launches";
 import whitelistRoutes from "./routes/whitelist";
 import referralRoutes from "./routes/referrals";
-import purchaseRoutes from "./routes/purchases";
+import { purchaseRouter, purchasesRouter } from "./routes/purchases";
 import vestingRoutes from "./routes/vesting";
 
 const app = express();
@@ -18,8 +18,8 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/launches/:id/whitelist", whitelistRoutes);
 app.use("/api/launches/:id/referrals", referralRoutes);
-app.use("/api/launches/:id/purchase", purchaseRoutes);
-app.use("/api/launches/:id/purchases", purchaseRoutes);
+app.use("/api/launches/:id/purchase", purchaseRouter);
+app.use("/api/launches/:id/purchases", purchasesRouter);
 app.use("/api/launches/:id/vesting", vestingRoutes);
 
 app.use("/api/launches", launchRoutes);

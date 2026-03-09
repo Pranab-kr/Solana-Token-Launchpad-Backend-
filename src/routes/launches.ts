@@ -137,32 +137,4 @@ router.put("/:id", authRequired, async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.delete("/:id", authRequired, async (req: AuthRequest, res: Response) => {
-  try {
-    const launch = await prisma.launch.findUnique({
-      where: { id: req.params.id },
-    });
-
-    if (!launch) {
-      return res.status(404).json({ error: "Launch not found" });
-    }
-
-    if (launch.creatorId !== req.userId) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-
-    await prisma.purchase.deleteMany({ where: { launchId: launch.id } });
-    await prisma.whitelistEntry.deleteMany({ where: { launchId: launch.id } });
-    await prisma.referralCode.deleteMany({ where: { launchId: launch.id } });
-    await prisma.launch.delete({ where: { id: launch.id } });
-
-    return res.status(200).json({ deleted: true });
-  } catch (error: any) {
-    if (error?.code === "P2023" || error?.code === "P2025") {
-      return res.status(404).json({ error: "Launch not found" });
-    }
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
 export default router;
