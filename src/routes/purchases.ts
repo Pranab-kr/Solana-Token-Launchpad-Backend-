@@ -5,7 +5,6 @@ import { computeStatus, computeTotalCost, Tier } from "../lib/helpers";
 
 const router = Router({ mergeParams: true });
 
-// POST /api/launches/:id/purchase — Record purchase (auth required)
 router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;
@@ -17,7 +16,6 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
 
     const numAmount = Number(amount);
 
-    // Find launch with purchases and whitelist
     const launch = await prisma.launch.findUnique({
       where: { id: launchId },
       include: { purchases: true, whitelistEntries: true },
@@ -27,13 +25,11 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: "Launch not found" });
     }
 
-    // Compute status
     const status = computeStatus(launch);
     if (status !== "ACTIVE") {
       return res.status(400).json({ error: `Launch is ${status}, not ACTIVE` });
     }
 
-    // Check whitelist (if whitelist exists)
     if (launch.whitelistEntries.length > 0) {
       const isWhitelisted = launch.whitelistEntries.some((w) => w.address === walletAddress);
       if (!isWhitelisted) {
@@ -41,7 +37,6 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Sybil protection: maxPerWallet per USER (across all wallets)
     const userPurchases = launch.purchases.filter((p) => p.userId === req.userId);
     const userTotalPurchased = userPurchases.reduce((sum, p) => sum + p.amount, 0);
 
@@ -49,23 +44,19 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "Exceeds maxPerWallet per user" });
     }
 
-    // Check totalSupply
     const totalPurchased = launch.purchases.reduce((sum, p) => sum + p.amount, 0);
     if (totalPurchased + numAmount > launch.totalSupply) {
       return res.status(400).json({ error: "Exceeds totalSupply" });
     }
 
-    // Check duplicate txSignature
     const existingTx = await prisma.purchase.findUnique({ where: { txSignature } });
     if (existingTx) {
       return res.status(400).json({ error: "Duplicate txSignature" });
     }
 
-    // Calculate totalCost with tiered pricing, accounting for previous purchases
     const tiers = launch.tiers as Tier[] | null;
     let totalCost = computeTotalCost(numAmount, launch.pricePerToken, tiers, totalPurchased);
 
-    // Apply referral discount if provided
     if (referralCode) {
       const referral = await prisma.referralCode.findUnique({
         where: { launchId_code: { launchId, code: referralCode } },
@@ -79,10 +70,8 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
         return res.status(400).json({ error: "Referral code exhausted" });
       }
 
-      // Apply discount
       totalCost = totalCost * (1 - referral.discountPercent / 100);
 
-      // Increment usedCount
       await prisma.referralCode.update({
         where: { id: referral.id },
         data: { usedCount: { increment: 1 } },
@@ -103,7 +92,6 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
 
     return res.status(201).json(purchase);
   } catch (error: any) {
-    // Handle Prisma invalid ID errors
     if (error?.code === "P2023" || error?.code === "P2025") {
       return res.status(404).json({ error: "Launch not found" });
     }
@@ -111,7 +99,6 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/launches/:id/purchases — View purchases (auth required)
 router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;
@@ -123,10 +110,8 @@ router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
 
     let purchases;
     if (launch.creatorId === req.userId) {
-      // Creator sees all purchases
       purchases = await prisma.purchase.findMany({ where: { launchId } });
     } else {
-      // Others see only their own
       purchases = await prisma.purchase.findMany({
         where: { launchId, userId: req.userId },
       });

@@ -22,12 +22,6 @@ export function computeStatus(launch: Launch & { purchases?: Purchase[] }): stri
   return "ACTIVE";
 }
 
-/**
- * Calculate total cost with tiered pricing.
- * Tiers are filled in order. Each tier has capacity = maxAmount - minAmount.
- * alreadyPurchased: total tokens previously purchased for this launch (to track which tiers are consumed).
- * Overflow beyond all tiers uses flat pricePerToken.
- */
 export function computeTotalCost(
   amount: number,
   pricePerToken: number,
@@ -38,16 +32,13 @@ export function computeTotalCost(
     return amount * pricePerToken;
   }
 
-  // Sort tiers by minAmount
   const sortedTiers = [...tiers].sort((a, b) => a.minAmount - b.minAmount);
 
-  // Calculate total tier capacity
   let totalTierCapacity = 0;
   for (const tier of sortedTiers) {
     totalTierCapacity += tier.maxAmount - tier.minAmount;
   }
 
-  // How much of the tier capacity has been consumed by previous purchases
   let consumed = Math.min(alreadyPurchased, totalTierCapacity);
   let remaining = amount;
   let totalCost = 0;
@@ -57,12 +48,10 @@ export function computeTotalCost(
     const tierCapacity = tier.maxAmount - tier.minAmount;
 
     if (consumed >= tierCapacity) {
-      // This tier is fully consumed by previous purchases
       consumed -= tierCapacity;
       continue;
     }
 
-    // Remaining capacity in this tier after previous purchases
     const availableInTier = tierCapacity - consumed;
     consumed = 0;
 
@@ -71,7 +60,6 @@ export function computeTotalCost(
     remaining -= amountInTier;
   }
 
-  // Any overflow beyond all tiers uses the flat pricePerToken
   if (remaining > 0) {
     totalCost += remaining * pricePerToken;
   }

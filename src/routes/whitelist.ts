@@ -4,7 +4,6 @@ import { AuthRequest, authRequired } from "../middleware/auth";
 
 const router = Router({ mergeParams: true });
 
-// POST /api/launches/:id/whitelist — Add addresses (auth, creator only)
 router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;
@@ -31,9 +30,7 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
           data: { launchId, address },
         });
         addedCount++;
-      } catch {
-        // Skip duplicates (unique constraint violation)
-      }
+      } catch {}
     }
 
     const total = await prisma.whitelistEntry.count({ where: { launchId } });
@@ -47,7 +44,6 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/launches/:id/whitelist — List whitelist (auth, creator only)
 router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;
@@ -76,7 +72,6 @@ router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// DELETE /api/launches/:id/whitelist/:address — Remove address (auth, creator only)
 router.delete("/:address", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;

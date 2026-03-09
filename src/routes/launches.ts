@@ -5,7 +5,6 @@ import { addStatusToLaunch } from "../lib/helpers";
 
 const router = Router();
 
-// POST /api/launches — Create launch (auth required)
 router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const { name, symbol, totalSupply, pricePerToken, startsAt, endsAt, maxPerWallet, description, tiers, vesting } = req.body;
@@ -43,7 +42,6 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/launches — List launches (public)
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
@@ -58,7 +56,6 @@ router.get("/", async (req: AuthRequest, res: Response) => {
 
     let launchesWithStatus = allLaunches.map((l) => addStatusToLaunch(l));
 
-    // Filter by status if specified
     if (statusFilter) {
       launchesWithStatus = launchesWithStatus.filter((l: any) => l.status === statusFilter);
     }
@@ -77,7 +74,6 @@ router.get("/", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/launches/:id — Get launch (public)
 router.get("/:id", async (req: AuthRequest, res: Response) => {
   try {
     const launch = await prisma.launch.findUnique({
@@ -91,7 +87,6 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
 
     return res.status(200).json(addStatusToLaunch(launch));
   } catch (error: any) {
-    // Prisma throws on malformed UUIDs
     if (error?.code === "P2023") {
       return res.status(404).json({ error: "Launch not found" });
     }
@@ -99,7 +94,6 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// PUT /api/launches/:id — Update launch (auth, creator only)
 router.put("/:id", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launch = await prisma.launch.findUnique({

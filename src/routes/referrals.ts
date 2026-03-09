@@ -4,7 +4,6 @@ import { AuthRequest, authRequired } from "../middleware/auth";
 
 const router = Router({ mergeParams: true });
 
-// POST /api/launches/:id/referrals — Create referral code (auth, creator only)
 router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;
@@ -24,7 +23,6 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "Missing required fields: code, discountPercent, maxUses" });
     }
 
-    // Check for duplicate code on this launch
     const existing = await prisma.referralCode.findUnique({
       where: { launchId_code: { launchId, code } },
     });
@@ -54,7 +52,6 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
     if (error?.code === "P2023") {
       return res.status(404).json({ error: "Launch not found" });
     }
-    // Handle unique constraint violation at DB level too
     if (error?.code === "P2002") {
       return res.status(409).json({ error: "Duplicate referral code for this launch" });
     }
@@ -62,7 +59,6 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/launches/:id/referrals — List referral codes (auth, creator only)
 router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;
