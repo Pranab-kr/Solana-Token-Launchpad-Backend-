@@ -41,7 +41,13 @@ router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
       },
     });
 
-    return res.status(201).json(referral);
+    return res.status(201).json({
+      id: referral.id,
+      code: referral.code,
+      discountPercent: referral.discountPercent,
+      maxUses: referral.maxUses,
+      usedCount: referral.usedCount,
+    });
   } catch (error: any) {
     if (error?.code === "P2023") {
       return res.status(404).json({ error: "Launch not found" });
@@ -70,7 +76,13 @@ router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
       where: { launchId },
     });
 
-    return res.status(200).json(referrals);
+    return res.status(200).json(referrals.map((r) => ({
+      id: r.id,
+      code: r.code,
+      discountPercent: r.discountPercent,
+      maxUses: r.maxUses,
+      usedCount: r.usedCount,
+    })));
   } catch (error: any) {
     if (error?.code === "P2023") {
       return res.status(404).json({ error: "Launch not found" });

@@ -3,9 +3,9 @@ import prisma from "../lib/prisma";
 import { AuthRequest, authRequired } from "../middleware/auth";
 import { computeStatus, computeTotalCost, Tier } from "../lib/helpers";
 
-export const purchaseRouter = Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 
-purchaseRouter.post("/", authRequired, async (req: AuthRequest, res: Response) => {
+router.post("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;
     const { walletAddress, amount, txSignature, referralCode } = req.body;
@@ -103,9 +103,7 @@ purchaseRouter.post("/", authRequired, async (req: AuthRequest, res: Response) =
   }
 });
 
-export const purchasesRouter = Router({ mergeParams: true });
-
-purchasesRouter.get("/", authRequired, async (req: AuthRequest, res: Response) => {
+router.get("/", authRequired, async (req: AuthRequest, res: Response) => {
   try {
     const launchId = req.params.id;
 
@@ -131,3 +129,5 @@ purchasesRouter.get("/", authRequired, async (req: AuthRequest, res: Response) =
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
+export default router;
