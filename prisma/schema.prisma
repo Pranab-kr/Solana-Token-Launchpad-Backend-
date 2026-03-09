@@ -32,9 +32,7 @@ model Launch {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  // Tiered pricing stored as JSON array
   tiers    Json?
-  // Vesting config stored as JSON
   vesting  Json?
 
   creator        User             @relation(fields: [creatorId], references: [id])
