@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+
+  launches  Launch[]
+  purchases Purchase[]
+}
+
+model Launch {
+  id            String   @id @default(uuid())
+  name          String
+  symbol        String
+  totalSupply   Float
+  pricePerToken Float
+  startsAt      DateTime
+  endsAt        DateTime
+  maxPerWallet  Float
+  description   String   @default("")
+  creatorId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Tiered pricing stored as JSON array
+  tiers    Json?
+  // Vesting config stored as JSON
+  vesting  Json?
+
+  creator        User             @relation(fields: [creatorId], references: [id])
+  whitelistEntries WhitelistEntry[]
+  referralCodes  ReferralCode[]
+  purchases      Purchase[]
+}
+
+model WhitelistEntry {
+  id        String   @id @default(uuid())
+  launchId  String
+  address   String
+  createdAt DateTime @default(now())
+
+  launch Launch @relation(fields: [launchId], references: [id])
+
+  @@unique([launchId, address])
+}
+
+model ReferralCode {
+  id              String @id @default(uuid())
+  launchId        String
+  code            String
+  discountPercent Float
+  maxUses         Int
+  usedCount       Int    @default(0)
+  createdAt       DateTime @default(now())
+
+  launch Launch @relation(fields: [launchId], references: [id])
+
+  @@unique([launchId, code])
+}
+
+model Purchase {
+  id            String   @id @default(uuid())
+  launchId      String
+  userId        String
+  walletAddress String
+  amount        Float
+  totalCost     Float
+  txSignature   String   @unique
+  referralCode  String?
+  createdAt     DateTime @default(now())
+
+  launch Launch @relation(fields: [launchId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+}
